@@ -8,9 +8,12 @@ const Mock = require('mockjs')
 const axios = require('axios')
 const config = require('config')
 const pathToRegexp = require('path-to-regexp')
+// 引入校验插件
+const Parameter = require('parameter')
+const parameter = new Parameter()
 
 const util = require('../util')
-const ft = require('../models/fields_table')
+const ft = require('../models/fields_table') // 过滤数据
 const { MockProxy, ProjectProxy, UserGroupProxy } = require('../proxy')
 
 const redis = util.getRedis()
@@ -53,11 +56,14 @@ module.exports = class MockController {
 
   static async create (ctx) {
     const uid = ctx.state.user.id
+    // checkBody()是使用的koa-validate插件，可以直接校验请求的参数
     const mode = ctx.checkBody('mode').notEmpty().value
     const projectId = ctx.checkBody('project_id').notEmpty().value
     const description = ctx.checkBody('description').notEmpty().value
     const url = ctx.checkBody('url').notEmpty().match(/^\/.*$/i, 'URL 必须以 / 开头').value
     const method = ctx.checkBody('method').notEmpty().toLow().in(['get', 'post', 'put', 'delete', 'patch']).value
+    const params = ctx.checkBody('params').notEmpty().value
+    const tag = ctx.checkBody('tag').notEmpty().value
 
     if (ctx.errors) {
       ctx.body = ctx.util.refail(null, 10001, ctx.errors)
@@ -87,7 +93,9 @@ module.exports = class MockController {
       description,
       method,
       url,
-      mode
+      mode,
+      params,
+      tag
     })
 
     await redis.del('project:' + projectId)
@@ -105,6 +113,7 @@ module.exports = class MockController {
     const projectId = ctx.checkQuery('project_id').notEmpty().value
     const pageSize = ctx.checkQuery('page_size').empty().toInt().gt(0).default(defPageSize).value
     const pageIndex = ctx.checkQuery('page_index').empty().toInt().gt(0).default(1).value
+    const tag = ctx.checkQuery('tag').empty().value
 
     if (ctx.errors) {
       ctx.body = ctx.util.refail(null, 10001, ctx.errors)
@@ -119,6 +128,10 @@ module.exports = class MockController {
 
     const where = { project: projectId }
 
+    if (tag && tag !== '') {
+      where.tag = tag
+    }
+
     if (keywords) {
       const keyExp = new RegExp(keywords)
       where.$or = [{
@@ -129,6 +142,8 @@ module.exports = class MockController {
         method: keyExp
       }, {
         mode: keyExp
+      }, {
+        params: keyExp
       }]
     }
 
@@ -143,7 +158,7 @@ module.exports = class MockController {
       project.user = _.pick(project.user, ft.user)
       project = _.pick(project, ['user'].concat(ft.project))
     }
-
+    // 数据格式化
     mocks = mocks.map(o => _.pick(o, ft.mock))
 
     ctx.body = ctx.util.resuccess({ project: project || {}, mocks })
@@ -161,7 +176,8 @@ module.exports = class MockController {
     const description = ctx.checkBody('description').notEmpty().value
     const url = ctx.checkBody('url').notEmpty().match(/^\/.*$/i, 'URL 必须以 / 开头').value
     const method = ctx.checkBody('method').notEmpty().toLow().in(['get', 'post', 'put', 'delete', 'patch']).value
-
+    const params = ctx.checkBody('params').notEmpty().value
+    const tag = ctx.checkBody('tag').value
     if (ctx.errors) {
       ctx.body = ctx.util.refail(null, 10001, ctx.errors)
       return
@@ -180,6 +196,8 @@ module.exports = class MockController {
     api.mode = mode
     api.method = method
     api.description = description
+    api.params = JSON.stringify(params)
+    api.tag = tag
 
     const existMock = await MockProxy.findOne({
       _id: { $ne: api.id },
@@ -200,6 +218,8 @@ module.exports = class MockController {
 
   /**
    * 获取 Mock 接口
+   * TODO: 可以看到请求的body体没有进行什么操作，只是用于代理请求的时候用用
+   * TODO: query 主要用于jsonp获取callback参数，没用于数据校验
    * @param {*} ctx
    */
 
@@ -213,10 +233,13 @@ module.exports = class MockController {
 
     apis = await redis.get(redisKey)
 
+    // 如果redis中存在apis，则解析apis
     if (apis) {
       apis = JSON.parse(apis)
     } else {
+      // 如果没有去数据库里查找对应的信息
       apis = await MockProxy.find({ project: projectId })
+      // 如果数据库中存在，则存入redis
       if (apis[0]) await redis.set(redisKey, JSON.stringify(apis), 'EX', 60 * 30)
     }
 
@@ -228,10 +251,41 @@ module.exports = class MockController {
       const url = item.url.replace(/{/g, ':').replace(/}/g, '') // /api/{user}/{id} => /api/:user/:id
       return item.method === method && pathToRegexp(url).test(mockURL)
     })[0]
-
     if (!api) ctx.throw(404)
 
+    // 传参判断
+    let errors
+    // 根据方法来选择参数的格式判断
+    if (api.method !== 'get') { // get之外的方法
+      let paramData = JSON.parse(api.params || '{}')
+      let rule = {}
+      for (let key in paramData) {
+        // console.log(key)
+        rule[key] = {
+          type: paramData[key].type,
+          required: paramData[key].required || false
+        }
+      }
+      errors = parameter.validate(rule, body)
+    } else { // get方法
+      let paramData = JSON.parse(api.params || '{}')
+      let rule = {}
+      for (let key in paramData) {
+        rule[key] = {
+          type: 'string',
+          required: paramData[key].required || false
+        } // 这地方只能判断string ， query获取到的全都是字符串类型， 所以get参数应该只能判断是否存在，不能判断类型
+      }
+      // 此处巨坑，query没有hasOwnProperty
+      let queryObj = {}
+      for (let key in query) {
+        queryObj[key] = query[key]
+      }
+      errors = parameter.validate(rule, queryObj)
+    }
+
     Mock.Handler.function = function (options) {
+      // 转换格式
       const mockUrl = api.url.replace(/{/g, ':').replace(/}/g, '') // /api/{user}/{id} => /api/:user/:id
       options.Mock = Mock
       options._req = ctx.request
@@ -258,6 +312,7 @@ module.exports = class MockController {
         return
       }
     } else {
+      // mock模式, 开虚拟机解析mock模板，生成数据
       const vm = new VM({
         timeout: 1000,
         sandbox: {
@@ -295,13 +350,17 @@ module.exports = class MockController {
     }
 
     await redis.lpush('mock.count', api._id)
-    if (jsonpCallback) {
-      ctx.type = 'text/javascript'
-      ctx.body = `${jsonpCallback}(${JSON.stringify(apiData, null, 2)})`
-        .replace(/\u2028/g, '\\u2028')
-        .replace(/\u2029/g, '\\u2029') // JSON parse vs eval fix. https://github.com/rack/rack-contrib/pull/37
+    if (errors) {
+      ctx.body = errors
     } else {
-      ctx.body = apiData
+      if (jsonpCallback) { // jsonp请求返回数据格式
+        ctx.type = 'text/javascript'
+        ctx.body = `${jsonpCallback}(${JSON.stringify(apiData, null, 2)})`
+          .replace(/\u2028/g, '\\u2028')
+          .replace(/\u2029/g, '\\u2029') // JSON parse vs eval fix. https://github.com/rack/rack-contrib/pull/37
+      } else { // 正常返回数据格式
+        ctx.body = apiData
+      }
     }
   }
 

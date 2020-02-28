@@ -7,13 +7,16 @@
       :nav="nav"
       v-model="pageName">
     </em-header>
+    <editor v-model="editor"></editor>
     <div v-shortkey="['tab']" @shortkey="handleKeyTab()"></div>
     <em-keyboard-short v-model="keyboards"></em-keyboard-short>
     <Back-top>
       <em-add icon="arrow-up-c" :bottom="90"></em-add>
     </Back-top>
     <transition name="fade" mode="out-in">
+      <!-- 设置 -->
       <project v-if="pageName === $t('p.detail.nav[1]')" key="a" :project-data="project"></project>
+      <!-- 列表 -->
       <div
         class="em-container"
         v-if="pageAnimated && pageName === $t('p.detail.nav[0]')"
@@ -40,8 +43,10 @@
             </Col>
           </Row>
         </div>
+        <!-- 中间一排按钮 -->
         <div class="em-proj-detail__switcher">
           <ul>
+            <!-- 创建接口 -->
             <li @click="openEditor()" v-shortkey="['ctrl', 'n']" @shortkey="openEditor()">
               <Icon type="plus-round"></Icon> {{$t('p.detail.create.action')}}
             </li>
@@ -58,6 +63,7 @@
             <li @click="download"><Icon type="code-download"></Icon> {{$tc('p.detail.download', 1)}}</li>
           </ul>
         </div>
+        <!-- 项目成员 -->
         <div class="em-proj-detail__members" v-if="project.members.length">
           <em-spots :size="6"></em-spots>
           <h2><Icon type="person-stalker"></Icon> {{$t('p.detail.member')}}</h2>
@@ -67,6 +73,12 @@
             </Col>
           </Row>
         </div>
+        <Select v-model="selectTag" filterable style="width:200px;margin-bottom: 20px;" placeholder="请选择标签">
+          <Option value="">全部</Option>
+          <Option value="默认">默认</Option>
+          <Option v-for="item in tags" :value="item" :key="item">{{ item }}</Option>
+        </Select>
+        <!-- 接口列表 -->
         <Table
           border
           :columns="columns"
@@ -87,6 +99,7 @@ import Clipboard from 'clipboard'
 import debounce from 'lodash/debounce'
 
 import * as api from '../../api'
+import Editor from './editor'
 import Project from '../new/project'
 import MockExpand from './mock-expand'
 
@@ -94,6 +107,7 @@ export default {
   name: 'projectDetail',
   data () {
     return {
+      selectTag: '',
       pageName: this.$t('p.detail.nav[0]'),
       selection: [],
       keywords: '',
@@ -101,6 +115,9 @@ export default {
         { title: this.$t('p.detail.nav[0]'), icon: 'android-list' },
         { title: this.$t('p.detail.nav[1]'), icon: 'gear-a' }
       ],
+      editor: {
+        show: false
+      },
       keyboards: [
         {
           category: this.$t('p.detail.keyboards[0].category'),
@@ -160,10 +177,19 @@ export default {
             </tag>
           }
         },
-        { title: 'URL', width: 420, ellipsis: true, sortable: true, key: 'url' },
+        { title: 'URL', width: 220, ellipsis: true, sortable: true, key: 'url' },
         { title: this.$t('p.detail.columns[0]'), ellipsis: true, key: 'description' },
         {
           title: this.$t('p.detail.columns[1]'),
+          width: 100,
+          ellipsis: false,
+          key: 'tag',
+          render: (h, params) => {
+            return <tag color="green">{params.row.tag}</tag>
+          }
+        },
+        {
+          title: this.$t('p.detail.columns[2]'),
           key: 'action',
           width: 160,
           align: 'center',
@@ -200,17 +226,34 @@ export default {
     }, 500))
   },
   computed: {
+    tags () {
+      const id = this.$route.params.id
+      const project = this.$store.state.project.list.filter(v => {
+        return v._id === id
+      })
+      console.log(id, project, this.$store.state.project)
+      if (project && project.length > 0) {
+        return project[0].tags
+      } else {
+        return []
+      }
+    },
     project () {
       return this.$store.state.mock.project
     },
     list () {
       const list = this.$store.state.mock.list
       const reg = this.keywords && new RegExp(this.keywords, 'i')
-      return reg
+      let result = reg
         ? list.filter(item => (
           reg.test(item.name) || reg.test(item.url) || reg.test(item.method)
         ))
         : list
+      if (this.selectTag) {
+        return result.filter(v => v.tag === this.selectTag)
+      } else {
+        return result
+      }
     },
     page () {
       return {
@@ -246,7 +289,28 @@ export default {
       })
     },
     preview (mock) {
-      window.open(this.baseUrl + mock.url + '#!method=' + mock.method)
+      let after = ''
+      let params = JSON.parse(mock.params || '{}')
+      if (mock.method === 'get') {
+        after = `&queryParameters=${
+          JSON.stringify(Object.keys(params).map(v => {
+            return {
+              enable: true,
+              key: v,
+              value: v.toUpperCase()
+            }
+          }))
+        }`
+      }
+      if (mock.method === 'post') {
+        after = `&body=${
+          JSON.stringify(Object.keys(params).reduce((p, v, i) => {
+            p[v] = v.toUpperCase()
+            return p
+          }, {}))
+        }`
+      }
+      window.open(this.baseUrl + mock.url + '#!method=' + mock.method + after)
     },
     selectionChange (selection) {
       this.selection = selection
@@ -274,20 +338,7 @@ export default {
             data: { id: this.project._id }
           }).then((res) => {
             if (res.data.success) {
-              const syncErrorURLs = res.data.data.syncErrorURLs
-              if (syncErrorURLs.length) {
-                this.$Notice.success({
-                  title: this.$t('p.detail.syncSwagger.syncResult'),
-                  desc: this.$t('p.detail.syncSwagger.success')
-                })
-                this.$Notice.warning({
-                  title: this.$t('p.detail.syncSwagger.syncFailed.title'),
-                  duration: 0,
-                  desc: `${syncErrorURLs.join(', ')} ${this.$t('p.detail.syncSwagger.syncFailed.desc')}`
-                })
-              } else {
-                this.$Message.success(this.$t('p.detail.syncSwagger.success'))
-              }
+              this.$Message.success(this.$t('p.detail.syncSwagger.success'))
               this.$store.commit('mock/SET_REQUEST_PARAMS', {pageIndex: 1})
               this.$store.dispatch('mock/FETCH', this.$route)
             }
@@ -331,16 +382,21 @@ export default {
       })
     },
     openEditor (mock) {
-      if (mock) {
-        this.$store.commit('mock/SET_EDITOR_DATA', {mock, baseUrl: this.baseUrl})
-        this.$router.push(`/editor/${this.project._id}/${mock._id}`)
-      } else {
-        this.$router.push(`/editor/${this.project._id}`)
-      }
+      // console.log(mock)
+      this.editor = mock || {}
+      this.$set(this.editor, 'show', true)
+
+      // if (mock) {
+      //   this.$store.commit('mock/SET_EDITOR_DATA', {mock, baseUrl: this.baseUrl})
+      //   this.$router.push(`/editor/${this.project._id}/${mock._id}`)
+      // } else {
+      //   this.$router.push(`/editor/${this.project._id}`)
+      // }
     }
   },
   components: {
-    Project
+    Project,
+    Editor
   }
 }
 </script>

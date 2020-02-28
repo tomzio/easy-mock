@@ -5,6 +5,7 @@
       <p>{{keywords ? $t('p.project.placeholder[3]') : page.placeholder}}</p>
     </em-placeholder>
     <em-keyboard-short></em-keyboard-short>
+    <!-- 个人项目上的三个选项 -->
     <em-header
       :icon="page.icon"
       :title="page.title"
@@ -19,6 +20,7 @@
         <Radio :label="$t('p.project.filter[2]')"></Radio>
       </Radio-group>
     </em-header>
+    <!-- 删除项目弹框 -->
     <Modal v-model="removeModal.show" width="360">
       <p slot="header" style="color:#f60;text-align:center">
         <Icon type="information-circled"></Icon>
@@ -38,6 +40,7 @@
           @click="remove">{{$t('p.project.modal.delete.button')}}</Button>
       </div>
     </Modal>
+    <!-- 项目卡片 -->
     <transition name="fade">
       <div class="em-container em-project__list" v-show="pageAnimated">
         <div class="ivu-row">
@@ -71,6 +74,7 @@
                     v-if="i < 5"
                     :key="i">
                 </div>
+                <!-- 操作按钮 -->
                 <Button-group class="project-control">
                   <Button type="ghost" icon="link" :title="$t('p.project.control[0]')" class="copy-url" @click="clip(item)"></Button>
                   <Button type="ghost" icon="ios-copy" :title="$t('p.project.control[1]')" style="width: 34%;" @click.stop="clone(item)"></Button>

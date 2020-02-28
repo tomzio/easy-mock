@@ -40,6 +40,26 @@ visualization view.
   </a>
 </p>
 
+## 增加功能截图
+
+### 1. 入参required
+![编辑页](https://wx4.sinaimg.cn/mw690/4d227521ly1g1jiga6urxj20kp0jbjrn.jpg)
+
+### 2. 接口列表页的入参列表展示
+![列表页](https://wx3.sinaimg.cn/mw690/4d227521ly1g1jigccn5xj20pb0gwq3d.jpg)
+
+### 3. 预览页根据入参配置, 自动生成参数
+![预览页](http://wx3.sinaimg.cn/mw690/4d227521ly1g1jige7t7aj20m80jqt8u.jpg)
+
+### 4. 配置项目标签和接口初始化mock
+![](https://s2.ax1x.com/2019/04/07/Af6zRA.png)
+
+### 5. 接口标签配置
+![](https://s2.ax1x.com/2019/04/07/AfqNSx.png)
+
+### 6. 接口标签筛选
+![](https://s2.ax1x.com/2019/04/07/AfcSxI.png)
+
 ## Features
 
 - Support API proxying
@@ -68,17 +88,13 @@ $ git clone https://github.com/easy-mock/easy-mock.git
 $ cd easy-mock && npm install
 ```
 
-### Configuration
+### 配置文件
 
-Find **config/default.json** or create **config/local.json** to overwrite some
-configuration.
+找到 **config/default.json**，或者创建一个 **config/local.json** 文件，将如下需要替换的字段换成自己的配置即可。
 
-> Easy Mock will load different configuration files according to your
-> environment. Reference to [node-config](https://github.com/lorenwest/node-config)
-> to get more information because Easy Mock uses node-config as its
-> configuration module.
+> 不同环境会加载不同的配置文件，在此之前你应该对 [node-config](https://github.com/lorenwest/node-config) 有所了解。
 
-```js
+```json
 {
   "port": 7300,
   "host": "0.0.0.0",
@@ -94,8 +110,8 @@ configuration.
     "db": 0
   },
   "blackList": {
-    "projects": [], // projectId, e.g."5a4495e16ef711102113e500"
-    "ips": [] // ip, e.g. "127.0.0.1"
+    "projects": [], // projectId，例："5a4495e16ef711102113e500"
+    "ips": [] // ip，例："127.0.0.1"
   },
   "rateLimit": { // https://github.com/koajs/ratelimit
     "max": 1000,
@@ -132,61 +148,57 @@ configuration.
 }
 ```
 
-**Note**:
+**背景图配置：**
 
-- The default value of `publicPath` is `'/dist/'`. You can replace it to your
-  own CDN if necessary.
-- If you changed some configuration of `fe`, you should run `build` command
-  to adapt that changes.
+登录页的背景图服务目前支持 [Unsplash](https://unsplash.com/developers) 与 [Bing](http://bing.com)。
 
-**Background**:
+如果 `unsplashClientId` 配置留空，默认由 Bing 提供服务。
 
-Easy Mock supports two background service,
-[Unsplash](https://unsplash.com/developers) and [Bing](http://bing.com).
+**注意：**
 
-If you leave `unsplashClientId` blank, the background will be provided by Bing.
+- `publicPath` 默认是 `'/dist/'`。如有需要，可以将其替换成自己的 CDN；
+- 关于 `fe` 的配置，一旦发生改变应该重新执行 build 命令。
 
-### Launch
+### 启动
 
 ```sh
 $ npm run dev
-# Visit http://127.0.0.1:7300
+# 访问 http://127.0.0.1:7300
 ```
 
-## More Commands
+## 更多命令
 
 ```sh
-# Build front-end assets
+# 前端静态资源构建打包
 $ npm run build
 
-# Run Easy Mock as production environment (You should run `build` first)
+# 以生产环境方式启动，需要提前执行 build
 $ npm run start
 
-# Run unit test
+# 单元测试
 $ npm run test
 
-# Test lint
+# 语法检测
 $ npm run lint
 ```
 
-## Deployment
+## 服务器部署
 
-> Please configure your configuration files before this step.
+> 在此之前请先配置好配置文件。
 
 ### PM2
 
-We're recommending you to use [PM2](https://github.com/Unitech/pm2) as your
-daemon process.
+当在内网服务器部署时，推荐使用 [PM2](https://github.com/Unitech/pm2) 来守护你的应用进程。
 
-#### Install PM2 Globally
+#### 全局安装 PM2
 
 ```sh
 $ [sudo] npm install pm2 -g
 ```
 
-#### Launch via PM2
+#### 用 PM2 启动
 
-> You should run `build` before this step.
+> 在此之前，你应该已经完成了 build。
 
 ```sh
 $ NODE_ENV=production pm2 start app.js

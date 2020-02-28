@@ -15,7 +15,14 @@ const codeMap = {
   '10001': 'params error'
 }
 
+/**
+ * 返回体封装
+ */
 const utilFn = {
+  /**
+   * 成功返回体
+   * @param {*} data 
+   */
   resuccess (data) {
     return {
       code: 200,
@@ -24,6 +31,13 @@ const utilFn = {
       data: data || null
     }
   },
+  
+  /**
+   * 错误返回体
+   * @param {*} message 
+   * @param {*} code 
+   * @param {*} data 
+   */
   refail (message, code, data) {
     return {
       code: code || -1,
@@ -41,6 +55,11 @@ module.exports = class Middleware {
     return next()
   }
 
+  /**
+   * ip过滤
+   * @param {Object} ctx 
+   * @param {Object} next 
+   */
   static ipFilter (ctx, next) {
     if (ipFilter(ctx.ip, blackIPs, {strict: false})) {
       ctx.body = utilFn.refail('请求频率太快，已被限制访问')
@@ -49,7 +68,13 @@ module.exports = class Middleware {
     return next()
   }
 
+  /**
+   * mock url过滤
+   * @param {Object} ctx 
+   * @param {Object} next 
+   */
   static mockFilter (ctx, next) {
+    // 获取url中的projectId和mockurl
     const pathNode = pathToRegexp('/mock/:projectId(.{24})/:mockURL*').exec(ctx.path)
 
     if (!pathNode) ctx.throw(404)
@@ -57,7 +82,7 @@ module.exports = class Middleware {
       ctx.body = ctx.util.refail('接口请求频率太快，已被限制访问')
       return
     }
-
+    // 分离放入对象
     ctx.pathNode = {
       projectId: pathNode[1],
       mockURL: '/' + (pathNode[2] || '')
