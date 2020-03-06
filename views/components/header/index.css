@@ -4,6 +4,10 @@
   height: 110px;
   position: relative;
 
+  .em-header__content {
+    overflow: hidden !important;
+  }
+
   .ivu-affix .em-header__content {
     padding: 10px 0;
   }
