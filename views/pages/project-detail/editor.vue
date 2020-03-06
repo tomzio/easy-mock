@@ -95,7 +95,7 @@
               <ul>
                 <!-- 格式化 预览 关闭 三个按钮 -->
                 <li @click="format">{{$t('p.detail.editor.control[0]')}}</li> 
-                <li @click="preview" v-if="false && isEdit">{{$t('p.detail.editor.control[1]')}}</li>
+                <li @click="preview" v-if="isEdit">{{$t('p.detail.editor.control[1]')}}</li>
                 <li @click="close">{{$t('p.detail.editor.control[2]')}}</li>
               </ul>
             </div>

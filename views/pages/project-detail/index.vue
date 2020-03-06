@@ -24,7 +24,9 @@
         <div class="em-proj-detail__info">
           <Row>
             <Col span="19">
-              <em-spots :size="6"></em-spots>
+              <div class="overflowHidden">
+                <em-spots :size="6"></em-spots>
+              </div>
               {{project.description}}
               <p class="tag">
                 <span>Base URL</span>

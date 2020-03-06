@@ -209,7 +209,7 @@
   }
 
   & > div:last-child {
-    flex: 0 0 800px;
+    flex: 0 0 650px;
   }
 
   .panel-info {
@@ -236,9 +236,9 @@
   }
 
   .box {
-    padding: 0 10px;
+    padding: 0 5px;
     overflow-y: scroll;
-    height: 150px;
+    height: 250px;
     border: 1px solid #eee;
   }
 
@@ -259,4 +259,15 @@
       }
     }
   }
+}
+
+.overflowHidden {
+  position: absolute !important;
+  overflow: hidden !important;
+  left: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 0;
+  background: transparent;
 }
