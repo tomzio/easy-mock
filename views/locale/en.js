@@ -79,7 +79,7 @@ export default {
         'Responsive Data | Easy Mock suport responsive data. It reponses data based on request query parameters.',
         'Syntax Lint | Forget syntax of Mock.js? No problem. Now type em in editor for syntax lint.'
       ],
-      notEmail: 'Your Email is bad',
+      notEmail: 'New registered user, Your Email is bad',
       confirm: {
         register: {
           content: 'User does\'t exsit, do you want create a new user with this email and password? Notice: You cannot retrieve your password if you forget in this version',

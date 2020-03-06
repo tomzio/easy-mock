@@ -209,7 +209,7 @@
   }
 
   & > div:last-child {
-    flex: 0 0 650px;
+    flex: 0 0 600px;
   }
 
   .panel-info {
@@ -231,7 +231,9 @@
     }
 
     .wrapper {
-      width: 100%;
+      position: absolute;
+      right: 10px;
+      left: 10px;
     }
   }
 
