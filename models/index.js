@@ -5,7 +5,7 @@ const config = require('config')
 
 mongoose.Promise = global.Promise
 mongoose.connect(config.get('db'), {
-  useMongoClient: true,
+  // useMongoClient: true,
   poolSize: 20
 }, (err) => {
   /* istanbul ignore if */

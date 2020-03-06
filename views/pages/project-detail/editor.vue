@@ -12,7 +12,7 @@
             <Form label-position="top">
               <!-- line 1 -->
               <Row gutter="16">
-                <Col span="12">
+                <Col span="6">
                   <!-- 请求方法选择 -->
                   <Form-item label="Method">
                     <i-select v-model="temp.method">
@@ -20,7 +20,7 @@
                     </i-select>
                   </Form-item>
                 </Col>
-                <Col span="12">
+                <Col span="18">
                   <!-- 请求url -->
                   <Form-item label="URL">
                     <i-input v-model="temp.url">
@@ -33,7 +33,7 @@
               <!-- 请求描述 -->
               <Form-item :label="$t('p.detail.columns[0]')">
                 <!-- <i-input v-model="temp.description"></i-input> -->
-                <i-input type="textarea" v-model="temp.description" :autosize="{minRows: 5,maxRows: 10}" placeholder="输入请求描述"></i-input>
+                <i-input type="textarea" v-model="temp.description" :autosize="{minRows: 2,maxRows: 10}" placeholder="输入请求描述"></i-input>
               </Form-item>
               <Row gutter="16">
                 <Col span="12">
@@ -52,15 +52,15 @@
               </Row>
               <!-- 参数列表 get方法放在url后？，其余放于body里-->
               <Form-item :label="$t('p.detail.editor.paramsList')" >
-                <Button style="width:100%" type="ghost" @click="handleAdd"><Icon type="plus-circled" size="22"></Icon></Button>
+                <Button style="width:100%;padding: 2px 10px 1px;margin-bottom:5px;" type="ghost" @click="handleAdd"><Icon type="plus-circled" size="22"></Icon></Button>
                 <div class="box">
                   <div v-for="(item, index) in formDynamic.items" :key="index">
                     <template v-if="item.status">
                       <Row :gutter="5" style="margin: 5px auto">
-                        <Col span="5">
+                        <Col span="6">
                           <Input type="text" v-model="item.value" placeholder="参数名称"/>
                         </Col>
-                        <Col span="5">
+                        <Col span="4">
                           <i-select v-model="item.paramType" placeholder="请选择参数类型">
                             <Option v-for="item in paramTypes" :value="item.type" :key="item.type">{{ item.type }}</Option>
                           </i-select>
@@ -75,7 +75,7 @@
                           </i-switch>
                         </Col>
                         <Col span="2">
-                          <Button type="ghost" @click="handleRemove(index)" style="padding: 2px 10px 1px"><Icon type="android-remove-circle" size="22"></Icon></Button>
+                          <Button @click="handleRemove(index)" style="padding: 2px 10px 1px"><Icon type="android-remove-circle" size="22"></Icon></Button>
                         </Col>
                       </Row>
                     </template>
