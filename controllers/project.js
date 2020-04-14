@@ -86,10 +86,10 @@ module.exports = class ProjectController {
     const project = await ProjectProxy.findOne(findQuery)
 
     if (project) {
-      ctx.body = project.name === name
-        ? ctx.util.refail(`项目 ${name} 已存在`)
-        : ctx.util.refail('请检查 URL 是否已经存在')
-      return
+      if (project.name === name) {
+        ctx.body = ctx.util.refail(`项目 ${name} 已存在`)
+        return
+      }
     }
 
     const projects = await ProjectProxy.newAndSave(saveQuery)
@@ -135,10 +135,10 @@ module.exports = class ProjectController {
     const checkProject = await ProjectProxy.findOne(query)
 
     if (checkProject) {
-      ctx.body = checkProject.name === newName
-        ? ctx.util.refail(`项目 ${newName} 已存在`)
-        : ctx.util.refail('请检查 URL 是否已经存在')
-      return
+      if (checkProject.name === newName) {
+        ctx.body = ctx.util.refail(`项目 ${newName} 已存在`)
+        return
+      }
     }
 
     const projects = await ProjectProxy.newAndSave({
@@ -359,10 +359,10 @@ module.exports = class ProjectController {
     const existProject = await ProjectProxy.findOne(existQuery)
 
     if (existProject) {
-      ctx.body = existProject.name === project.name
-        ? ctx.util.refail(`项目 ${project.name} 已存在`)
-        : ctx.util.refail('请检查 URL 是否已经存在')
-      return
+      if (existProject.name === project.name) {
+        ctx.body = ctx.util.refail(`项目 ${project.name} 已存在`)
+        return
+      }
     }
 
     await ProjectProxy.updateById(project)
